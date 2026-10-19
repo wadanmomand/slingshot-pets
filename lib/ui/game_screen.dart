@@ -64,12 +64,13 @@ class _GameScreenState extends State<GameScreen>
   bool _paused = false;
   int _coinsEarned = 0;
   double _playTime = 0;
+  final List<PetCelebration> _celebrations = [];
 
   @override
   void initState() {
     super.initState();
     _levelIndex = widget.startIndex;
-    _sling = Slingshot(anchor: Vector2(-6, 2));
+    _sling = Slingshot(anchor: Vector2(-4, 2));
     _loadLevel(_levelIndex);
     _ticker = createTicker(_onTick)..start();
     // 3D sprites load async; painter falls back to procedural until ready.
@@ -105,6 +106,7 @@ class _GameScreenState extends State<GameScreen>
     _sling.anchor.setFrom(Vector2(def.slingX, def.slingY));
     _frameCamera(def);
     _particles.clear();
+    _celebrations.clear();
     _aimDrag = null;
     _grabbing = false;
     _winShown = false;
@@ -118,6 +120,8 @@ class _GameScreenState extends State<GameScreen>
   void _onTick(Duration elapsed) {
     _playTime +=
         min((elapsed - _lastTick).inMicroseconds / 1e6, 1 / 20);
+    // Prune finished pet celebrations.
+    _celebrations.removeWhere((c) => _playTime - c.startTime > 2.0);
     if (_paused) {
       _lastTick = elapsed;
       return;
@@ -197,6 +201,14 @@ class _GameScreenState extends State<GameScreen>
           _sfx.cage();
           _sfx.cheer();
           _shakeMag = max(_shakeMag, 14);
+          // The freed pet celebrates its rescue: hops with joy + hearts.
+          if (e.petId != null) {
+            _celebrations.add(PetCelebration(
+              at: Vector2(e.at.x, e.at.y),
+              petId: e.petId!,
+              startTime: _playTime,
+            ));
+          }
           if (w.freedPets.length >= w.totalPets && w.totalPets > 0) {
             // Last pet: dramatic slow-mo.
             _slowmoLeft = 0.9;
@@ -317,6 +329,7 @@ class _GameScreenState extends State<GameScreen>
                           shake: _shake,
                           sprites: SpriteCache.instance,
                           time: _playTime,
+                          celebrations: _celebrations,
                         ),
                       ),
                     ),
@@ -325,7 +338,7 @@ class _GameScreenState extends State<GameScreen>
                       _dialog(
                         title: 'Level Complete!',
                         stars: w.starsForWin(),
-                        subtitle: '+$_coinsEarned coins 🪙',
+                        subtitle: '+$_coinsEarned coins',
                         buttons: [
                           _btn('Retry', _retry),
                           _btn('Next', _next,

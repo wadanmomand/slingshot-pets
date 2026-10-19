@@ -50,6 +50,14 @@ class SmashCamera {
   double s(double meters) => meters * scale;
 }
 
+/// A freed pet celebrating its rescue: hops with joy for ~1.8s.
+class PetCelebration {
+  final Vector2 at; // world meters (y-up)
+  final String petId;
+  final double startTime; // seconds on the painter clock
+  PetCelebration({required this.at, required this.petId, required this.startTime});
+}
+
 class SmashPainter extends CustomPainter {
   final SmashWorld world;
   final ParticleSystem particles;
@@ -59,6 +67,7 @@ class SmashPainter extends CustomPainter {
   final Offset shake; // screen shake offset in logical px
   final SpriteCache sprites;
   final double time; // seconds, drives ambient animation
+  final List<PetCelebration> celebrations;
 
   SmashPainter({
     required this.world,
@@ -69,6 +78,7 @@ class SmashPainter extends CustomPainter {
     required this.shake,
     required this.sprites,
     required this.time,
+    this.celebrations = const [],
   });
 
   Offset _w2s(Vector2 w) => camera.worldToScreen(w);
@@ -98,6 +108,7 @@ class SmashPainter extends CustomPainter {
     }
     _drawSlingshot(canvas);
     if (aimDrag != null) _drawTrajectory(canvas);
+    _drawCelebrations(canvas);
     particles.paint(
       canvas,
       map: (o) => _w2s(Vector2(o.dx, o.dy)),
@@ -591,8 +602,74 @@ class SmashPainter extends CustomPainter {
     'pet_bunny',
   ];
 
+  /// Sprite name for a pet id (shared with the celebration renderer).
+  static String petSpriteFor(String petId) =>
+      _petSprites[petId.hashCode.abs() % _petSprites.length];
+
+  /// Freed pets hop with joy + floating hearts for ~1.8s after rescue.
+  void _drawCelebrations(Canvas canvas) {
+    const duration = 1.8;
+    for (final c in celebrations) {
+      final t = time - c.startTime;
+      if (t < 0 || t > duration) continue;
+      final fade = t > duration - 0.4 ? (duration - t) / 0.4 : 1.0;
+      final pop = t < 0.22 ? 0.4 + 0.6 * (t / 0.22) : 1.0;
+      final hopAmp = t < 1.2 ? 1.0 : 0.25; // big hops, then settles
+      final hop = sin(t * 9.0).abs() * _s(0.38) * hopAmp;
+      final wiggle = sin(t * 11.0) * 0.14;
+      final center = _w2s(c.at) + Offset(0, -hop - _s(0.35));
+      final size = _s(1.35) * pop;
+      final paint = Paint()
+        ..filterQuality = FilterQuality.medium
+        ..color = Color.fromRGBO(255, 255, 255, fade);
+      canvas.save();
+      canvas.translate(center.dx, center.dy);
+      canvas.rotate(wiggle);
+      final img = sprites.get(petSpriteFor(c.petId));
+      if (img != null) {
+        final w = size;
+        final h = w * img.height / img.width;
+        canvas.drawImageRect(
+          img,
+          Rect.fromLTWH(0, 0, img.width.toDouble(), img.height.toDouble()),
+          Rect.fromCenter(center: Offset.zero, width: w, height: h),
+          paint,
+        );
+      } else {
+        _drawPet(canvas, Offset.zero, size * 0.30, c.petId);
+      }
+      canvas.restore();
+      // Floating hearts around the happy pet.
+      for (var i = 0; i < 3; i++) {
+        final ht = (t * 0.9 + i * 0.33) % 1.0;
+        final hx = center.dx + sin(i * 2.4 + t * 3.0) * _s(0.55);
+        final hy = center.dy - _s(0.4) - ht * _s(1.1);
+        final hs = _s(0.16 + 0.08 * sin(i * 1.7)) * (1.0 - ht * 0.4);
+        _drawHeart(canvas, Offset(hx, hy), hs,
+            Color.fromRGBO(255, 105, 135, fade * (1.0 - ht * 0.5)));
+      }
+    }
+  }
+
+  /// Small procedural heart (no emoji — all-3D rule).
+  void _drawHeart(Canvas canvas, Offset c, double s, Color color) {
+    final path = Path()
+      ..moveTo(c.dx, c.dy + s * 0.9)
+      ..cubicTo(c.dx - s * 1.4, c.dy - s * 0.1, c.dx - s * 0.7, c.dy - s * 1.1,
+          c.dx, c.dy - s * 0.35)
+      ..cubicTo(c.dx + s * 0.7, c.dy - s * 1.1, c.dx + s * 1.4, c.dy - s * 0.1,
+          c.dx, c.dy + s * 0.9)
+      ..close();
+    canvas.drawPath(path, Paint()..color = color);
+    // Glossy highlight.
+    canvas.drawCircle(
+        c + Offset(-s * 0.35, -s * 0.35),
+        s * 0.18,
+        Paint()..color = Colors.white.withValues(alpha: 0.55 * color.a));
+  }
+
   void _drawCage(Canvas canvas, Rect r, String petId) {
-    final petName = _petSprites[petId.hashCode.abs() % _petSprites.length];
+    final petName = petSpriteFor(petId);
     if (sprites.get('cage') != null) {
       // 3D pet behind the bars.
       final petImg = sprites.get(petName);

@@ -48,51 +48,50 @@ class _HomeScreenState extends State<HomeScreen> {
             colors: [Color(0xFFF9A825), Color(0xFFEF6C00)],
           ),
         ),
+        // Full-bleed art: cover-fit fills every screen ratio (no orange
+        // bands on tall phones). Tap zones stay aligned because the art's
+        // vertical mapping is preserved under cover.
         child: SafeArea(
-          child: Center(
-            child: AspectRatio(
-              aspectRatio: 1024 / 1820,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  // The finalized concept art, pixel-perfect.
-                  _ConceptArt(),
-                  // Invisible tap zone over the painted PLAY button.
-                  _TapZone(
-                    alignY: 0.66,
-                    widthFactor: 0.84,
-                    heightFactor: 0.115,
-                    onTap: () => _openMap(context, chapter),
-                  ),
-                  // Invisible tap zone over the painted MY PETS button.
-                  _TapZone(
-                    alignY: 0.855,
-                    widthFactor: 0.52,
-                    heightFactor: 0.065,
-                    onTap: () => _openPets(context),
-                  ),
-                  // Next-level pill, top-left.
-                  Positioned(
-                    top: 10,
-                    left: 12,
-                    child: _levelPill(nextLevel),
-                  ),
-                  // Coin chip, top-right.
-                  Positioned(
-                    top: 10,
-                    right: 12,
-                    child: _coinChip(),
-                  ),
-                  // Cross-promo, bottom.
-                  Positioned(
-                    left: 14,
-                    right: 14,
-                    bottom: 6,
-                    child: _crossPromo(),
-                  ),
-                ],
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // The finalized concept art, edge-to-edge.
+              _ConceptArt(),
+              // Invisible tap zone over the painted PLAY button.
+              _TapZone(
+                alignY: 0.66,
+                widthFactor: 0.84,
+                heightFactor: 0.115,
+                onTap: () => _openMap(context, chapter),
               ),
-            ),
+              // Invisible tap zone over the painted MY PETS button.
+              _TapZone(
+                alignY: 0.855,
+                widthFactor: 0.52,
+                heightFactor: 0.065,
+                onTap: () => _openPets(context),
+              ),
+              // Next-level pill, top-left.
+              Positioned(
+                top: 10,
+                left: 12,
+                child: _levelPill(nextLevel),
+              ),
+              // Coin chip, top-right.
+              Positioned(
+                top: 10,
+                right: 12,
+                child: _coinChip(),
+              ),
+              // Cross-promo, slim banner at the very bottom (never covers
+              // the painted buttons).
+              Positioned(
+                left: 14,
+                right: 14,
+                bottom: 8,
+                child: _crossPromo(),
+              ),
+            ],
           ),
         ),
       ),
@@ -171,27 +170,30 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   /// Cross-promotion for the sibling Pawzzle title (free installs both ways).
+  /// Slim single-line banner — never covers the painted buttons.
   Widget _crossPromo() {
     return Card(
       color: Colors.orange[50],
+      margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
           children: [
-            const Text('🎈', style: TextStyle(fontSize: 32)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('More from Pawzzle',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text('Pawzzle Rescue: Bubble Pop — 2000 bubble levels!',
-                      style: TextStyle(fontSize: 12)),
-                ],
-              ),
+            const Sprite3D('ball', size: 30),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text('Pawzzle Rescue: Bubble Pop — 2000 levels!',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis),
             ),
             TextButton(
+              style: TextButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
               onPressed: () {
                 // Play Store link goes here once published.
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -220,8 +222,8 @@ class _ConceptArt extends StatelessWidget {
     if (img == null) {
       return Container(color: const Color(0xFFF9A825));
     }
-    // Exact aspect fit: the parent AspectRatio matches the art (1024x1820).
-    return RawImage(image: img, fit: BoxFit.fill);
+    // Cover-fit: fills every screen ratio, no letterbox bands.
+    return RawImage(image: img, fit: BoxFit.cover);
   }
 }
 

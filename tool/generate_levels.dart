@@ -15,7 +15,7 @@ import 'package:smash/core/level_model.dart';
 import 'package:smash/core/smash_world.dart';
 
 const double _g = 10.0;
-const double _slingX = -6.0;
+const double _slingX = -4.0; // moved inward 2026-10-19: was -6.0, too close to screen edge to drag
 const double _slingY = 2.0;
 const int _targetLevels = 1000;
 const int _maxAttempts = 30000;
@@ -70,11 +70,11 @@ double _j(Random rng, double v, double amt) => v + (rng.nextDouble() * 2 - 1) * 
     par: 1,
     slingX: _slingX,
     slingY: _slingY,
-    bodies: [_ground(), _box(SmashBodyKind.cage, cx, 0.6, 1.2, 1.2, petId: pet)],
+    bodies: [_ground(), _box(SmashBodyKind.cage, cx, 0.84, 1.68, 1.68, petId: pet)],
   );
   return (
     level: level,
-    shots: [ShotPlan(Vector2(cx, 0.6), 13)],
+    shots: [ShotPlan(Vector2(cx, 0.84), 13)],
   );
 }
 
@@ -91,12 +91,12 @@ double _j(Random rng, double v, double amt) => v + (rng.nextDouble() * 2 - 1) * 
       _ground(),
       _box(SmashBodyKind.wood, cx, 0.5, 1, 1),
       _box(SmashBodyKind.wood, cx, 1.5, 1, 1),
-      _box(SmashBodyKind.cage, cx, 2.5, 1, 1, petId: pet),
+      _box(SmashBodyKind.cage, cx, 2.70, 1.40, 1.40, petId: pet),
     ],
   );
   return (
     level: level,
-    shots: [ShotPlan(Vector2(cx, 2.5), 13.5)],
+    shots: [ShotPlan(Vector2(cx, 2.70), 13.5)],
   );
 }
 
@@ -111,15 +111,15 @@ double _j(Random rng, double v, double amt) => v + (rng.nextDouble() * 2 - 1) * 
     slingY: _slingY,
     bodies: [
       _ground(),
-      _box(SmashBodyKind.glass, cx - 0.7, 0.75, 0.15, 1.5),
-      _box(SmashBodyKind.glass, cx + 0.7, 0.75, 0.15, 1.5),
-      _box(SmashBodyKind.glass, cx, 1.55, 1.7, 0.15),
-      _box(SmashBodyKind.cage, cx, 0.5, 1, 1, petId: pet),
+      _box(SmashBodyKind.glass, cx - 0.9, 0.75, 0.15, 1.5),
+      _box(SmashBodyKind.glass, cx + 0.9, 0.75, 0.15, 1.5),
+      _box(SmashBodyKind.glass, cx, 1.55, 2.1, 0.15),
+      _box(SmashBodyKind.cage, cx, 0.70, 1.40, 1.40, petId: pet),
     ],
   );
   return (
     level: level,
-    shots: [ShotPlan(Vector2(cx - 0.7, 0.75), 13)],
+    shots: [ShotPlan(Vector2(cx - 0.9, 0.75), 13)],
   );
 }
 
@@ -137,7 +137,7 @@ double _j(Random rng, double v, double amt) => v + (rng.nextDouble() * 2 - 1) * 
       _box(SmashBodyKind.wood, cx, 0.5, 1, 1),
       _box(SmashBodyKind.wood, cx, 1.5, 1, 1),
       _box(SmashBodyKind.wood, cx, 2.5, 1, 1),
-      _box(SmashBodyKind.cage, cx, 3.5, 1, 1, petId: pet),
+      _box(SmashBodyKind.cage, cx, 3.70, 1.40, 1.40, petId: pet),
     ],
   );
   // Smash the base: tower topples, cage falls ~3.5m and bursts on landing.
@@ -159,13 +159,13 @@ double _j(Random rng, double v, double amt) => v + (rng.nextDouble() * 2 - 1) * 
     bodies: [
       _ground(),
       _box(SmashBodyKind.stone, 5.0, 1.3, 0.6, 2.6),
-      _box(SmashBodyKind.cage, cx, 0.5, 1, 1, petId: pet),
+      _box(SmashBodyKind.cage, cx, 0.70, 1.40, 1.40, petId: pet),
     ],
   );
   // Lob over the unbreakable wall.
   return (
     level: level,
-    shots: [ShotPlan(Vector2(cx, 0.5), 14.5, highArc: true)],
+    shots: [ShotPlan(Vector2(cx, 0.70), 14.5, highArc: true)],
   );
 }
 
@@ -180,18 +180,18 @@ double _j(Random rng, double v, double amt) => v + (rng.nextDouble() * 2 - 1) * 
     slingY: _slingY,
     bodies: [
       _ground(),
-      _box(SmashBodyKind.wood, cx - 1, 0.5, 1, 1),
-      _box(SmashBodyKind.wood, cx + 1, 0.5, 1, 1),
-      _box(SmashBodyKind.wood, cx, 1.15, 3.4, 0.3),
-      _box(SmashBodyKind.cage, cx, 0.5, 1, 1, petId: pet),
+      _box(SmashBodyKind.wood, cx - 1.2, 0.5, 1, 1),
+      _box(SmashBodyKind.wood, cx + 1.2, 0.5, 1, 1),
+      _box(SmashBodyKind.wood, cx, 1.15, 3.8, 0.3),
+      _box(SmashBodyKind.cage, cx, 0.70, 1.40, 1.40, petId: pet),
     ],
   );
   // Break a support, then hit the exposed cage.
   return (
     level: level,
     shots: [
-      ShotPlan(Vector2(cx - 1, 0.5), 13.5),
-      ShotPlan(Vector2(cx, 0.5), 13),
+      ShotPlan(Vector2(cx - 1.2, 0.5), 13.5),
+      ShotPlan(Vector2(cx, 0.70), 13),
     ],
   );
 }
@@ -207,15 +207,15 @@ double _j(Random rng, double v, double amt) => v + (rng.nextDouble() * 2 - 1) * 
     slingY: _slingY,
     bodies: [
       _ground(),
-      _box(SmashBodyKind.cage, x1, 0.5, 1, 1, petId: 'L${id}p1'),
-      _box(SmashBodyKind.cage, x2, 0.5, 1, 1, petId: 'L${id}p2'),
+      _box(SmashBodyKind.cage, x1, 0.70, 1.40, 1.40, petId: 'L${id}p1'),
+      _box(SmashBodyKind.cage, x2, 0.70, 1.40, 1.40, petId: 'L${id}p2'),
     ],
   );
   return (
     level: level,
     shots: [
-      ShotPlan(Vector2(x1, 0.5), 13),
-      ShotPlan(Vector2(x2, 0.5), 13),
+      ShotPlan(Vector2(x1, 0.70), 13),
+      ShotPlan(Vector2(x2, 0.70), 13),
     ],
   );
 }
@@ -234,7 +234,7 @@ double _j(Random rng, double v, double amt) => v + (rng.nextDouble() * 2 - 1) * 
       _box(SmashBodyKind.wood, cx - 0.5, 0.5, 1, 1),
       _box(SmashBodyKind.wood, cx + 0.5, 0.5, 1, 1),
       _box(SmashBodyKind.wood, cx, 1.5, 1, 1),
-      _box(SmashBodyKind.cage, cx, 2.5, 1, 1, petId: pet),
+      _box(SmashBodyKind.cage, cx, 2.70, 1.40, 1.40, petId: pet),
     ],
   );
   return (
@@ -257,12 +257,12 @@ double _j(Random rng, double v, double amt) => v + (rng.nextDouble() * 2 - 1) * 
       _box(SmashBodyKind.wood, cx - 1, 1.1, 0.8, 2.2),
       _box(SmashBodyKind.wood, cx + 1, 1.1, 0.8, 2.2),
       _box(SmashBodyKind.wood, cx, 2.35, 3, 0.3),
-      _box(SmashBodyKind.cage, cx, 3.0, 1, 1, petId: pet),
+      _box(SmashBodyKind.cage, cx, 3.20, 1.40, 1.40, petId: pet),
     ],
   );
   return (
     level: level,
-    shots: [ShotPlan(Vector2(cx, 3.0), 13.5)],
+    shots: [ShotPlan(Vector2(cx, 3.20), 13.5)],
   );
 }
 
@@ -279,7 +279,7 @@ double _j(Random rng, double v, double amt) => v + (rng.nextDouble() * 2 - 1) * 
       _ground(),
       _box(SmashBodyKind.glass, cx - 0.55, 0.9, 0.15, 1.9, angle: 0.45),
       _box(SmashBodyKind.glass, cx + 0.55, 0.9, 0.15, 1.9, angle: -0.45),
-      _box(SmashBodyKind.cage, cx, 0.5, 1, 1, petId: pet),
+      _box(SmashBodyKind.cage, cx, 0.70, 1.40, 1.40, petId: pet),
     ],
   );
   return (
@@ -299,17 +299,17 @@ double _j(Random rng, double v, double amt) => v + (rng.nextDouble() * 2 - 1) * 
     slingY: _slingY,
     bodies: [
       _ground(),
-      _box(SmashBodyKind.cage, x1, 0.5, 1, 1, petId: 'L${id}p1'),
+      _box(SmashBodyKind.cage, x1, 0.70, 1.40, 1.40, petId: 'L${id}p1'),
       _box(SmashBodyKind.wood, x2, 0.5, 1, 1),
       _box(SmashBodyKind.wood, x2, 1.5, 1, 1),
-      _box(SmashBodyKind.cage, x2, 2.5, 1, 1, petId: 'L${id}p2'),
+      _box(SmashBodyKind.cage, x2, 2.70, 1.40, 1.40, petId: 'L${id}p2'),
     ],
   );
   return (
     level: level,
     shots: [
-      ShotPlan(Vector2(x1, 0.5), 13),
-      ShotPlan(Vector2(x2, 2.5), 13.5),
+      ShotPlan(Vector2(x1, 0.70), 13),
+      ShotPlan(Vector2(x2, 2.70), 13.5),
     ],
   );
 }
@@ -329,12 +329,12 @@ double _j(Random rng, double v, double amt) => v + (rng.nextDouble() * 2 - 1) * 
       _box(SmashBodyKind.stone, cx + 1, 0.5, 0.8, 1),
       _box(SmashBodyKind.wood, cx, 0.5, 1, 1),
       _box(SmashBodyKind.wood, cx, 1.5, 1, 1),
-      _box(SmashBodyKind.cage, cx, 2.5, 1, 1, petId: pet),
+      _box(SmashBodyKind.cage, cx, 2.70, 1.40, 1.40, petId: pet),
     ],
   );
   return (
     level: level,
-    shots: [ShotPlan(Vector2(cx, 2.5), 13.5)],
+    shots: [ShotPlan(Vector2(cx, 2.70), 13.5)],
   );
 }
 
@@ -350,9 +350,9 @@ double _j(Random rng, double v, double amt) => v + (rng.nextDouble() * 2 - 1) * 
     bodies: [
       _ground(),
       _box(SmashBodyKind.glass, cx - 1.5, 0.75, 0.15, 1.5),
-      _box(SmashBodyKind.glass, cx - 0.5, 0.75, 0.15, 1.5),
-      _box(SmashBodyKind.glass, cx - 1.0, 1.55, 1.3, 0.15),
-      _box(SmashBodyKind.cage, cx, 0.5, 1, 1, petId: pet),
+      _box(SmashBodyKind.glass, cx - 0.9, 0.75, 0.15, 1.5),
+      _box(SmashBodyKind.glass, cx - 1.2, 1.55, 1.3, 0.15),
+      _box(SmashBodyKind.cage, cx, 0.70, 1.40, 1.40, petId: pet),
     ],
   );
   // Smash through the glass corridor into the cage.
@@ -375,13 +375,13 @@ double _j(Random rng, double v, double amt) => v + (rng.nextDouble() * 2 - 1) * 
       _ground(),
       _box(SmashBodyKind.stone, cx, 0.3, 0.6, 0.6),
       _box(SmashBodyKind.wood, cx, 0.85, 3.6, 0.25),
-      _box(SmashBodyKind.cage, cx + 1.3, 1.35, 1, 1, petId: pet),
+      _box(SmashBodyKind.cage, cx + 1.3, 1.55, 1.40, 1.40, petId: pet),
     ],
   );
   // Cage perched on the plank end: direct hit.
   return (
     level: level,
-    shots: [ShotPlan(Vector2(cx + 1.3, 1.35), 13)],
+    shots: [ShotPlan(Vector2(cx + 1.3, 1.55), 13)],
   );
 }
 
@@ -398,13 +398,13 @@ double _j(Random rng, double v, double amt) => v + (rng.nextDouble() * 2 - 1) * 
       _ground(),
       _box(SmashBodyKind.wood, cx - 1.2, 0.75, 0.5, 1.5),
       _box(SmashBodyKind.wood, cx + 1.2, 0.75, 0.5, 1.5),
-      _box(SmashBodyKind.cage, cx, 0.5, 1, 1, petId: pet),
+      _box(SmashBodyKind.cage, cx, 0.70, 1.40, 1.40, petId: pet),
     ],
   );
   // Lob into the open-topped bunker.
   return (
     level: level,
-    shots: [ShotPlan(Vector2(cx, 0.5), 14, highArc: true)],
+    shots: [ShotPlan(Vector2(cx, 0.70), 14, highArc: true)],
   );
 }
 
@@ -422,12 +422,12 @@ double _j(Random rng, double v, double amt) => v + (rng.nextDouble() * 2 - 1) * 
       _box(SmashBodyKind.wood, cx - 1, 0.5, 1, 1),
       _box(SmashBodyKind.wood, cx + 1, 0.5, 1, 1),
       _box(SmashBodyKind.wood, cx, 1.15, 3.4, 0.3),
-      _box(SmashBodyKind.cage, cx, 1.8, 1, 1, petId: pet),
+      _box(SmashBodyKind.cage, cx, 2.00, 1.40, 1.40, petId: pet),
     ],
   );
   return (
     level: level,
-    shots: [ShotPlan(Vector2(cx, 1.8), 13.5)],
+    shots: [ShotPlan(Vector2(cx, 2.00), 13.5)],
   );
 }
 
@@ -445,12 +445,12 @@ double _j(Random rng, double v, double amt) => v + (rng.nextDouble() * 2 - 1) * 
       _box(SmashBodyKind.stone, cx - 1, 1.0, 0.6, 2),
       _box(SmashBodyKind.stone, cx + 1, 1.0, 0.6, 2),
       _box(SmashBodyKind.wood, cx, 2.15, 2.6, 0.3),
-      _box(SmashBodyKind.cage, cx, 2.8, 1, 1, petId: pet),
+      _box(SmashBodyKind.cage, cx, 3.00, 1.40, 1.40, petId: pet),
     ],
   );
   return (
     level: level,
-    shots: [ShotPlan(Vector2(cx, 2.8), 13.5)],
+    shots: [ShotPlan(Vector2(cx, 3.00), 13.5)],
   );
 }
 
@@ -466,17 +466,17 @@ double _j(Random rng, double v, double amt) => v + (rng.nextDouble() * 2 - 1) * 
     slingY: _slingY,
     bodies: [
       _ground(),
-      _box(SmashBodyKind.cage, x1, 0.5, 1, 1, petId: 'L${id}p1'),
-      _box(SmashBodyKind.cage, x2, 0.5, 1, 1, petId: 'L${id}p2'),
-      _box(SmashBodyKind.cage, x3, 0.5, 1, 1, petId: 'L${id}p3'),
+      _box(SmashBodyKind.cage, x1, 0.70, 1.40, 1.40, petId: 'L${id}p1'),
+      _box(SmashBodyKind.cage, x2, 0.70, 1.40, 1.40, petId: 'L${id}p2'),
+      _box(SmashBodyKind.cage, x3, 0.70, 1.40, 1.40, petId: 'L${id}p3'),
     ],
   );
   return (
     level: level,
     shots: [
-      ShotPlan(Vector2(x1, 0.5), 13),
-      ShotPlan(Vector2(x2, 0.5), 13),
-      ShotPlan(Vector2(x3, 0.5), 13),
+      ShotPlan(Vector2(x1, 0.70), 13),
+      ShotPlan(Vector2(x2, 0.70), 13),
+      ShotPlan(Vector2(x3, 0.70), 13),
     ],
   );
 }
