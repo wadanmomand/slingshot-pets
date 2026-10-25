@@ -1,5 +1,7 @@
-// Settings screen: concept-style 3D toggles for music, SFX,
-// vibration and notifications. Persisted in ProgressState.
+// Settings screen: concept-style 3D toggles for SFX and vibration.
+// Persisted in ProgressState. (Music/Notifications rows were removed:
+// the app ships no music track and no notification scheduling, so those
+// toggles could never do anything.)
 import 'package:flutter/material.dart';
 
 import '../art/sprites.dart';
@@ -28,6 +30,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Honor the SFX toggle (checked before each click sound plays).
+    _sfx.enabled = widget.progress.sfxOn;
     final p = widget.progress;
     final bg = SpriteCache.instance.get('bg_map');
     return Scaffold(
@@ -86,12 +90,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: Column(
                       children: [
                         _row(
-                          spriteKey: 'btn3d_music',
-                          label: 'Music',
-                          value: p.music,
-                          onTap: () => _toggle(() => p.music = !p.music),
-                        ),
-                        _row(
                           spriteKey: 'btn3d_sound',
                           label: 'Sound Effects',
                           value: p.sfxOn,
@@ -103,13 +101,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           value: p.vibration,
                           onTap: () =>
                               _toggle(() => p.vibration = !p.vibration),
-                        ),
-                        _row(
-                          spriteKey: 'btn3d_bell',
-                          label: 'Notifications',
-                          value: p.notifications,
-                          onTap: () => _toggle(
-                              () => p.notifications = !p.notifications),
                         ),
                         const SizedBox(height: 16),
                         Row(
@@ -126,10 +117,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               child: _goldBtn('RESET', () {
                                 _sfx.click();
                                 setState(() {
-                                  p.music = true;
                                   p.sfxOn = true;
                                   p.vibration = false;
-                                  p.notifications = true;
                                 });
                                 p.save();
                               }),

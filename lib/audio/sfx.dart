@@ -8,13 +8,16 @@ class Sfx {
 
   Future<void> _play(String asset) async {
     if (!enabled) return;
+    final p = AudioPlayer();
     try {
-      final p = AudioPlayer();
       await p.setVolume(volume);
       await p.play(AssetSource(asset));
-      p.onPlayerComplete.first.then((_) => p.dispose());
+      await p.onPlayerComplete.first;
     } catch (_) {
       // ignore: avoid_catches_without_on_clauses
+    } finally {
+      // Always release the native player, even if play() threw (m9).
+      await p.dispose();
     }
   }
 

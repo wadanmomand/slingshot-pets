@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'ads/ad_service.dart';
+import 'art/sprites.dart';
 import 'core/level_model.dart';
 import 'meta/progress.dart';
 import 'ui/home_screen.dart';
@@ -51,6 +52,9 @@ class _BootState extends State<_Boot> {
     await progress.load();
     final ads = AdService();
     await ads.init();
+    // Sprites are decoded before the home screen builds, so 3D icons
+    // (coin chip etc.) are never blank on first paint, on any device.
+    await SpriteCache.instance.load();
     return _Ready(levels, progress, ads);
   }
 

@@ -9,6 +9,7 @@ import 'package:forge2d/forge2d.dart' show Vector2;
 import '../ads/ad_service.dart';
 import '../art/sprites.dart';
 import '../audio/sfx.dart';
+import '../core/haptics.dart';
 import '../core/level_model.dart';
 import '../core/slingshot.dart';
 import 'icon3d.dart';
@@ -64,6 +65,7 @@ class _GameScreenState extends State<GameScreen>
   bool _paused = false;
   int _coinsEarned = 0;
   double _playTime = 0;
+  double _winTime = 0;
   final List<PetCelebration> _celebrations = [];
 
   @override
@@ -159,7 +161,9 @@ class _GameScreenState extends State<GameScreen>
     if (w != null && _slowmoLeft <= 0) {
       if (w.phase == GamePhase.won && !_winShown) {
         _winShown = true;
+        _winTime = _playTime;
         _sfx.win();
+        Haptics.heavy();
         final coins = widget.progress.recordWin(
           widget.levels[_levelIndex].id,
           w.starsForWin(),
@@ -168,10 +172,6 @@ class _GameScreenState extends State<GameScreen>
         widget.progress.save();
         widget.ads.onLevelWon();
         _coinsEarned = coins;
-        // Let the celebration play a beat before the dialog.
-        Future.delayed(const Duration(milliseconds: 700), () {
-          if (mounted) setState(() {});
-        });
       } else if (w.phase == GamePhase.lost && !_loseShown) {
         _loseShown = true;
         _sfx.fail();
@@ -200,6 +200,7 @@ class _GameScreenState extends State<GameScreen>
           _particles.confetti(at: at);
           _sfx.cage();
           _sfx.cheer();
+          Haptics.heavy();
           _shakeMag = max(_shakeMag, 14);
           // The freed pet celebrates its rescue: hops with joy + hearts.
           if (e.petId != null) {
@@ -241,7 +242,12 @@ class _GameScreenState extends State<GameScreen>
   void _onPanStart(DragStartDetails d, Size size) {
     _camera.layout(size);
     final w = _world;
-    if (w == null || w.phase != GamePhase.aiming || _paused) return;
+    if (w == null ||
+        w.phase != GamePhase.aiming ||
+        _paused ||
+        w.ballsLeft <= 0) {
+      return;
+    }
     final wp = _camera.screenToWorld(d.localPosition);
     if ((wp - _sling.anchor).length < 3.0) {
       _grabbing = true;
@@ -262,8 +268,14 @@ class _GameScreenState extends State<GameScreen>
     _aimDrag = null;
     final w = _world;
     if (drag != null && drag.length > 0.35 && w != null) {
+      // No balls left: dull click, no launch SFX, no phantom aim (m8).
+      if (w.ballsLeft <= 0) {
+        _sfx.click();
+        return;
+      }
       w.launchBall(_sling.launchVelocity(drag));
       _sfx.launch();
+      Haptics.medium();
     }
   }
 
@@ -304,6 +316,9 @@ class _GameScreenState extends State<GameScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Honor the Settings toggles (SFX + vibration).
+    _sfx.enabled = widget.progress.sfxOn;
+    Haptics.enabled = widget.progress.vibration;
     final w = _world;
     return Scaffold(
       body: w == null
@@ -334,7 +349,11 @@ class _GameScreenState extends State<GameScreen>
                       ),
                     ),
                     _hud(w),
-                    if (_winShown && w.phase == GamePhase.won)
+                    // Celebration beat: dialog appears 0.7s after the win
+                    // so the slow-mo + pet celebration plays first (m4).
+                    if (_winShown &&
+                        w.phase == GamePhase.won &&
+                        _playTime - _winTime > 0.7)
                       _dialog(
                         title: 'Level Complete!',
                         stars: w.starsForWin(),
@@ -351,7 +370,7 @@ class _GameScreenState extends State<GameScreen>
                         stars: 0,
                         buttons: [
                           _btn('Retry', _retry),
-                          _btn('+2 balls 📺', _continueWithAd, primary: true),
+                          _btn('+2 balls', _continueWithAd, primary: true),
                         ],
                       ),
                     if (_paused) _pauseOverlay(),

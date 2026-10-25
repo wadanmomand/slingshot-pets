@@ -9,6 +9,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../ads/ad_service.dart';
 import '../art/sprites.dart';
 import '../audio/sfx.dart';
+import '../core/haptics.dart';
 import '../core/level_model.dart';
 import '../meta/progress.dart';
 import 'icon3d.dart';
@@ -69,7 +70,8 @@ class _LevelMapScreenState extends State<LevelMapScreen> {
 
   void _jumpToCurrent() {
     if (!_scroll.hasClients) return;
-    final idx = (widget.progress.maxUnlocked - 1).clamp(0, 99);
+    // Chapter-relative index: chapter 2's level 250 is node 49, not 99 (m5).
+    final idx = (widget.progress.maxUnlocked - 1 - _chapter * 100).clamp(0, 99);
     final y = _nodeY(idx) - MediaQuery.of(context).size.height / 2;
     _scroll.jumpTo(y.clamp(0, _scroll.position.maxScrollExtent));
   }
@@ -81,6 +83,9 @@ class _LevelMapScreenState extends State<LevelMapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Honor the Settings toggles (SFX + vibration).
+    _sfx.enabled = widget.progress.sfxOn;
+    Haptics.enabled = widget.progress.vibration;
     final start = _chapter * 100;
     final chapterLevels = widget.levels.sublist(start, start + 100);
     final mapH = _topPad + 100 * _spacing + 120;
@@ -269,7 +274,7 @@ class _LevelMapScreenState extends State<LevelMapScreen> {
                 ),
                 child: Center(
                   child: Text(
-                    'PLAY LEVEL ${widget.progress.maxUnlocked}',
+                    'PLAY LEVEL ${widget.progress.maxUnlocked.clamp(1, 1000)}',
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
@@ -593,12 +598,17 @@ class _BigTitle extends StatelessWidget {
     final longest =
         lines.map((l) => l.length).reduce((a, b) => a > b ? a : b);
     final w = MediaQuery.of(context).size.width - 144;
-    final fontSize = (w / (longest * 0.72)).clamp(48.0, 88.0);
+    // Fit-to-width math; the old 48px floor overflowed narrow phones (m6),
+    // and FittedBox guarantees it never bleeds past the buttons.
+    final fontSize = (w / (longest * 0.72)).clamp(28.0, 88.0);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         for (final line in lines)
-          _ChunkyTitle(line, fontSize: fontSize),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: _ChunkyTitle(line, fontSize: fontSize),
+          ),
       ],
     );
   }

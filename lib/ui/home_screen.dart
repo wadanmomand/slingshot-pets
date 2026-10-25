@@ -1,11 +1,10 @@
-// Home screen: Play, My Pets, coins, and a cross-promo card.
+// Home screen: Play, My Pets, and coins.
 import 'package:flutter/material.dart';
 
 import '../ads/ad_service.dart';
 import '../art/sprites.dart';
 import '../core/level_model.dart';
 import '../meta/progress.dart';
-import 'icon3d.dart';
 import 'level_map_screen.dart';
 import 'pets_screen.dart';
 
@@ -26,6 +25,37 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  // Painted-button rects in bg_home.jpg fractional coordinates (960x1920),
+  // measured from the art. Tap zones are mapped through the BoxFit.cover
+  // transform so they stay exactly on the buttons on every screen ratio.
+  static const _playRect = Rect.fromLTRB(0.050, 0.896, 0.479, 0.981);
+  static const _petsRect = Rect.fromLTRB(0.494, 0.896, 0.950, 0.980);
+  // bg_home.jpg aspect ratio.
+  static const _artAspect = 960 / 1920;
+
+  /// Maps an art-fraction rect to screen pixels under BoxFit.cover.
+  static Rect _coverMap(Rect art, double w, double h) {
+    final s = w / h;
+    double x0 = 0, x1 = 1, y0 = 0, y1 = 1;
+    if (s <= _artAspect) {
+      // Taller screen than the art: scale by height, crop left/right.
+      final cut = (1 - s / _artAspect) / 2;
+      x0 = cut;
+      x1 = 1 - cut;
+    } else {
+      // Wider screen than the art: scale by width, crop top/bottom.
+      final cut = (1 - _artAspect / s) / 2;
+      y0 = cut;
+      y1 = 1 - cut;
+    }
+    return Rect.fromLTRB(
+      (art.left - x0) / (x1 - x0) * w,
+      (art.top - y0) / (y1 - y0) * h,
+      (art.right - x0) / (x1 - x0) * w,
+      (art.bottom - y0) / (y1 - y0) * h,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -49,49 +79,43 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         // Full-bleed art: cover-fit fills every screen ratio (no orange
-        // bands on tall phones). Tap zones stay aligned because the art's
-        // vertical mapping is preserved under cover.
+        // bands on tall phones). Tap zones are mapped through the same
+        // cover transform, so they track the painted buttons exactly.
         child: SafeArea(
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // The finalized concept art, edge-to-edge.
-              _ConceptArt(),
-              // Invisible tap zone over the painted PLAY button.
-              _TapZone(
-                alignY: 0.66,
-                widthFactor: 0.84,
-                heightFactor: 0.115,
-                onTap: () => _openMap(context, chapter),
-              ),
-              // Invisible tap zone over the painted MY PETS button.
-              _TapZone(
-                alignY: 0.855,
-                widthFactor: 0.52,
-                heightFactor: 0.065,
-                onTap: () => _openPets(context),
-              ),
-              // Next-level pill, top-left.
-              Positioned(
-                top: 10,
-                left: 12,
-                child: _levelPill(nextLevel),
-              ),
-              // Coin chip, top-right.
-              Positioned(
-                top: 10,
-                right: 12,
-                child: _coinChip(),
-              ),
-              // Cross-promo, slim banner at the very bottom (never covers
-              // the painted buttons).
-              Positioned(
-                left: 14,
-                right: 14,
-                bottom: 8,
-                child: _crossPromo(),
-              ),
-            ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final w = constraints.maxWidth;
+              final h = constraints.maxHeight;
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  // The finalized concept art, edge-to-edge.
+                  _ConceptArt(),
+                  // Invisible tap zone over the painted PLAY button.
+                  _TapZone(
+                    rect: _coverMap(_playRect, w, h),
+                    onTap: () => _openMap(context, chapter),
+                  ),
+                  // Invisible tap zone over the painted MY PETS button.
+                  _TapZone(
+                    rect: _coverMap(_petsRect, w, h),
+                    onTap: () => _openPets(context),
+                  ),
+                  // Next-level pill, top-left (compact — never covers the title).
+                  Positioned(
+                    top: 8,
+                    left: 10,
+                    child: _levelPill(nextLevel),
+                  ),
+                  // Coin chip, top-right (compact — never covers the title).
+                  Positioned(
+                    top: 8,
+                    right: 10,
+                    child: _coinChip(),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -125,10 +149,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _levelPill(int nextLevel) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: const [
           BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 2)),
         ],
@@ -138,7 +162,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Text('Level $nextLevel',
               style: const TextStyle(
-                  fontSize: 19,
+                  fontSize: 14,
                   fontWeight: FontWeight.w900,
                   color: Color(0xFF6D3A00))),
         ],
@@ -148,10 +172,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _coinChip() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: const [
           BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 2)),
         ],
@@ -159,52 +183,30 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Sprite3D('coin_3d', size: 28),
-          const SizedBox(width: 6),
+          _coinIcon(20),
+          const SizedBox(width: 4),
           Text('${widget.progress.coins}',
               style: const TextStyle(
-                  fontSize: 19, fontWeight: FontWeight.w900)),
+                  fontSize: 14, fontWeight: FontWeight.w900)),
         ],
       ),
     );
   }
 
-  /// Cross-promotion for the sibling Pawzzle title (free installs both ways).
-  /// Slim single-line banner — never covers the painted buttons.
-  Widget _crossPromo() {
-    return Card(
-      color: Colors.orange[50],
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          children: [
-            const Sprite3D('ball', size: 30),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: Text('Pawzzle Rescue: Bubble Pop — 2000 levels!',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis),
-            ),
-            TextButton(
-              style: TextButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              onPressed: () {
-                // Play Store link goes here once published.
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Coming soon to Google Play!')),
-                );
-              },
-              child: const Text('GET'),
-            ),
-          ],
-        ),
-      ),
+  /// Gold coin: AI sprite when loaded, procedural 3D-shaded coin otherwise —
+  /// the icon is never blank on any device.
+  Widget _coinIcon(double size) {
+    final img = SpriteCache.instance.get('coin_3d');
+    if (img != null) {
+      return SizedBox(
+        width: size,
+        height: size,
+        child: RawImage(image: img, fit: BoxFit.contain),
+      );
+    }
+    return CustomPaint(
+      size: Size(size, size),
+      painter: _ProceduralCoinPainter(),
     );
   }
 }
@@ -228,33 +230,83 @@ class _ConceptArt extends StatelessWidget {
 }
 
 /// Invisible tap target over a painted button in the concept art.
+/// [rect] is in screen pixels (already mapped through the cover transform).
 class _TapZone extends StatelessWidget {
-  final double alignY;
-  final double widthFactor;
-  final double heightFactor;
+  final Rect rect;
   final VoidCallback onTap;
   const _TapZone({
-    required this.alignY,
-    required this.widthFactor,
-    required this.heightFactor,
+    required this.rect,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Positioned.fill(
-      child: Align(
-        alignment: Alignment(0, alignY),
-        child: FractionallySizedBox(
-          widthFactor: widthFactor,
-          heightFactor: heightFactor,
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: onTap,
-            child: const SizedBox.expand(),
-          ),
-        ),
+    return Positioned(
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: const SizedBox.expand(),
       ),
     );
   }
+}
+
+/// Procedural 3D-shaded gold coin — fallback when the AI coin sprite has not
+/// loaded yet, so the coin icon is never blank on any device.
+class _ProceduralCoinPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final c = Offset(size.width / 2, size.height / 2);
+    final r = size.width / 2;
+    // Gold disc with radial 3D shading (light from top-left).
+    canvas.drawCircle(
+      c,
+      r,
+      Paint()
+        ..shader = const RadialGradient(
+          center: Alignment(-0.35, -0.4),
+          radius: 1.1,
+          colors: [
+            Color(0xFFFFE082),
+            Color(0xFFFFC107),
+            Color(0xFFE65100),
+          ],
+          stops: [0.0, 0.55, 1.0],
+        ).createShader(Rect.fromCircle(center: c, radius: r)),
+    );
+    // Dark rim for depth.
+    canvas.drawCircle(
+      c,
+      r * 0.94,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = r * 0.12
+        ..color = const Color(0xFFBF360C),
+    );
+    // Inner engraved ring.
+    canvas.drawCircle(
+      c,
+      r * 0.62,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = r * 0.09
+        ..color = const Color(0xFFFFF3C4),
+    );
+    // Glossy highlight.
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: c + Offset(-r * 0.28, -r * 0.34),
+        width: r * 0.62,
+        height: r * 0.38,
+      ),
+      Paint()..color = const Color(0xB3FFFFFF),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

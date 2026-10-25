@@ -73,6 +73,9 @@ class ParticleSystem {
   }
 
   /// Soft round confetti (pet rescue celebration).
+  /// Meter-scale params: the particle system works in world meters
+  /// (ball max launch ~22 m/s, gravity 10) — pixel-scale values here
+  /// rendered as giant screen-filling blobs (M2).
   void confetti({required Offset at, int count = 26}) {
     burst(
       at: at,
@@ -84,12 +87,12 @@ class ParticleSystem {
         Color(0xFFA5D6A7),
         Color(0xFFCE93D8),
       ],
-      speedMin: 60,
-      speedMax: 260,
+      speedMin: 2,
+      speedMax: 8,
       life: 1.1,
-      sizeMin: 4,
-      sizeMax: 7,
-      gravity: 500,
+      sizeMin: 0.12,
+      sizeMax: 0.24,
+      gravity: 22,
     );
   }
 

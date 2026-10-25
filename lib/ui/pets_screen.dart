@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../art/sprites.dart';
 import '../audio/sfx.dart';
+import '../core/haptics.dart';
 import '../meta/progress.dart';
 import 'icon3d.dart';
 import 'chunky_text.dart';
@@ -48,6 +49,9 @@ class _PetsScreenState extends State<PetsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Honor the Settings toggles (SFX + vibration).
+    _sfx.enabled = widget.progress.sfxOn;
+    Haptics.enabled = widget.progress.vibration;
     final sprites = SpriteCache.instance;
     final bg = sprites.get('bg_pets');
     final rescued = _rescuedTypes();
