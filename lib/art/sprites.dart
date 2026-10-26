@@ -14,10 +14,15 @@ class SpriteCache {
     'glass',
     'stone',
     'cage',
+    'tnt',
     'pet_puppy',
     'pet_kitten',
     'pet_ginger',
     'pet_bunny',
+    'pet_full_puppy',
+    'pet_full_kitten',
+    'pet_full_ginger',
+    'pet_full_bunny',
     'ball',
     'slingshot',
     'bg_game',
@@ -37,23 +42,29 @@ class SpriteCache {
   ];
 
   final Map<String, ui.Image> _imgs = {};
+  Future<void>? _loading;
 
   bool get loaded => _imgs.isNotEmpty;
 
-  Future<void> load() async {
-    if (loaded) return;
-    for (final n in names) {
-      // Backgrounds are JPG (smaller); sprites are PNG (transparency).
-      for (final ext in ['png', 'jpg']) {
-        try {
-          final data = await rootBundle.load('assets/sprites/$n.$ext');
-          final codec =
-              await ui.instantiateImageCodec(data.buffer.asUint8List());
-          _imgs[n] = (await codec.getNextFrame()).image;
-          break;
-        } catch (_) {
-          // Try the next extension; procedural fallback covers failures.
-        }
+  /// Decodes all sprites in parallel: the old sequential loop made boot
+  /// take 10-30s on weak phones (one slow decode blocked everything).
+  Future<void> load() {
+    if (loaded) return Future.value();
+    _loading ??= Future.wait(names.map(_loadOne));
+    return _loading!;
+  }
+
+  Future<void> _loadOne(String n) async {
+    // Backgrounds are JPG (smaller); sprites are PNG (transparency).
+    for (final ext in ['png', 'jpg']) {
+      try {
+        final data = await rootBundle.load('assets/sprites/$n.$ext');
+        final codec =
+            await ui.instantiateImageCodec(data.buffer.asUint8List());
+        _imgs[n] = (await codec.getNextFrame()).image;
+        return;
+      } catch (_) {
+        // Try the next extension; procedural fallback covers failures.
       }
     }
   }

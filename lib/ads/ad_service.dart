@@ -10,11 +10,19 @@ class AdService {
   static const String rewardedId = 'ca-app-pub-3940256099942544/5224354917';
 
   bool _initialized = false;
+  Future<void>? _initFuture;
   InterstitialAd? _interstitial;
   RewardedAd? _rewarded;
   int _winsSinceInterstitial = 0;
 
-  Future<void> init() async {
+  /// Shared init future: concurrent callers await the same init instead
+  /// of the second one returning early while init is still running.
+  Future<void> init() {
+    _initFuture ??= _doInit();
+    return _initFuture!;
+  }
+
+  Future<void> _doInit() async {
     if (_initialized) return;
     _initialized = true;
     await MobileAds.instance.initialize();

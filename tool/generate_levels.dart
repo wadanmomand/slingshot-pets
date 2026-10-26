@@ -481,20 +481,213 @@ double _j(Random rng, double v, double amt) => v + (rng.nextDouble() * 2 - 1) * 
   );
 }
 
+// ---------------------------------------------------------------------------
+// TNT templates (new in v1.0.2): the first NEW VERB since launch. Earlier
+// chapters only re-shaped the same break-the-structure loop; TNT adds
+// explosions and chain reactions, so later levels play differently.
+// ---------------------------------------------------------------------------
+
+({LevelDef level, List<ShotPlan> shots}) _tTnt(Random rng, int id) {
+  final cx = _j(rng, 7.0, 0.8);
+  final pet = 'L${id}p1';
+  final level = LevelDef(
+    id: id,
+    balls: 3,
+    par: 1,
+    slingX: _slingX,
+    slingY: _slingY,
+    bodies: [
+      _ground(),
+      _box(SmashBodyKind.tnt, cx - 1.2, 0.5, 1, 1),
+      _box(SmashBodyKind.cage, cx, 0.70, 1.40, 1.40, petId: pet),
+    ],
+  );
+  // Hit the barrel: the blast (3.5m) frees the cage.
+  return (
+    level: level,
+    shots: [ShotPlan(Vector2(cx - 1.2, 0.5), 13)],
+  );
+}
+
+({LevelDef level, List<ShotPlan> shots}) _tTntChain(Random rng, int id) {
+  final cx = _j(rng, 7.0, 0.8);
+  final pet = 'L${id}p1';
+  final level = LevelDef(
+    id: id,
+    balls: 3,
+    par: 1,
+    slingX: _slingX,
+    slingY: _slingY,
+    bodies: [
+      _ground(),
+      _box(SmashBodyKind.tnt, cx - 2.4, 0.5, 1, 1),
+      _box(SmashBodyKind.tnt, cx - 1.2, 0.5, 1, 1),
+      _box(SmashBodyKind.cage, cx, 0.70, 1.40, 1.40, petId: pet),
+    ],
+  );
+  // One hit sets off the chain: barrel 1 -> barrel 2 -> cage.
+  return (
+    level: level,
+    shots: [ShotPlan(Vector2(cx - 2.4, 0.5), 13)],
+  );
+}
+
+({LevelDef level, List<ShotPlan> shots}) _tTntShield(Random rng, int id) {
+  final cx = _j(rng, 7.0, 0.8);
+  final pet = 'L${id}p1';
+  final level = LevelDef(
+    id: id,
+    balls: 3,
+    par: 1,
+    slingX: _slingX,
+    slingY: _slingY,
+    bodies: [
+      _ground(),
+      _box(SmashBodyKind.tnt, cx - 2.2, 0.5, 1, 1),
+      _box(SmashBodyKind.wood, cx - 1.0, 0.75, 0.5, 1.5),
+      _box(SmashBodyKind.cage, cx, 0.70, 1.40, 1.40, petId: pet),
+    ],
+  );
+  // The wood wall blocks a direct shot; the blast clears wall + cage.
+  return (
+    level: level,
+    shots: [ShotPlan(Vector2(cx - 2.2, 0.5), 13)],
+  );
+}
+
+({LevelDef level, List<ShotPlan> shots}) _tTntTwin(Random rng, int id) {
+  final x1 = _j(rng, 5.0, 0.5);
+  final x2 = _j(rng, 9.0, 0.5);
+  final cx = (x1 + x2) / 2;
+  final level = LevelDef(
+    id: id,
+    balls: 3,
+    par: 1,
+    slingX: _slingX,
+    slingY: _slingY,
+    bodies: [
+      _ground(),
+      _box(SmashBodyKind.tnt, cx, 0.5, 1, 1),
+      _box(SmashBodyKind.cage, x1, 0.70, 1.40, 1.40, petId: 'L${id}p1'),
+      _box(SmashBodyKind.cage, x2, 0.70, 1.40, 1.40, petId: 'L${id}p2'),
+    ],
+  );
+  // One barrel between two pets: a single blast frees both.
+  return (
+    level: level,
+    shots: [ShotPlan(Vector2(cx, 0.5), 13)],
+  );
+}
+
+({LevelDef level, List<ShotPlan> shots}) _tTntDrop(Random rng, int id) {
+  final cx = _j(rng, 7.0, 0.8);
+  final pet = 'L${id}p1';
+  final level = LevelDef(
+    id: id,
+    balls: 3,
+    par: 1,
+    slingX: _slingX,
+    slingY: _slingY,
+    bodies: [
+      _ground(),
+      _box(SmashBodyKind.tnt, cx, 0.5, 1, 1),
+      _box(SmashBodyKind.wood, cx, 1.5, 1, 1),
+      _box(SmashBodyKind.wood, cx, 2.5, 1, 1),
+      _box(SmashBodyKind.wood, cx, 3.5, 1, 1),
+      _box(SmashBodyKind.cage, cx, 4.70, 1.40, 1.40, petId: pet),
+    ],
+  );
+  // Blast clears the tower base (cage at 4.2m is beyond the 3.5m blast);
+  // the cage falls ~4.7m and bursts on landing.
+  return (
+    level: level,
+    shots: [ShotPlan(Vector2(cx, 0.5), 13)],
+  );
+}
+
 typedef _Builder = ({LevelDef level, List<ShotPlan> shots}) Function(
     Random rng, int id);
 
 const List<List<_Builder>> _chapterTemplates = [
-  [_tOpen, _tStack, _tGlassHouse],
-  [_tOpen, _tStack, _tGlassHouse, _tTower, _tTwin],
-  [_tTower, _tStoneShield, _tBridge, _tTwin, _tPyramid],
-  [_tTower, _tStoneShield, _tBridge, _tPyramid, _tPerch, _tDome],
-  [_tGlassHouse, _tPerch, _tDome, _tDouble, _tFortress, _tCorridor],
-  [_tStoneShield, _tDouble, _tFortress, _tCorridor, _tSeesaw, _tBunker],
-  [_tPyramid, _tCorridor, _tSeesaw, _tBunker, _tSplitBridge, _tArch],
-  [_tDouble, _tFortress, _tBunker, _tSplitBridge, _tArch, _tScatter],
-  [_tTwin, _tCorridor, _tSplitBridge, _tArch, _tScatter, _tTower],
-  [_tStoneShield, _tDome, _tSeesaw, _tArch, _tScatter, _tPyramid],
+  [_tOpen, _tStack, _tGlassHouse, _tTnt],
+  [_tOpen, _tStack, _tGlassHouse, _tTower, _tTwin, _tTnt, _tTntChain],
+  [_tTower, _tStoneShield, _tBridge, _tTwin, _tPyramid, _tTntChain, _tTntShield],
+  [
+    _tTower,
+    _tStoneShield,
+    _tBridge,
+    _tPyramid,
+    _tPerch,
+    _tDome,
+    _tTntShield,
+    _tTntTwin
+  ],
+  [
+    _tGlassHouse,
+    _tPerch,
+    _tDome,
+    _tDouble,
+    _tFortress,
+    _tCorridor,
+    _tTnt,
+    _tTntTwin,
+    _tTntDrop
+  ],
+  [
+    _tStoneShield,
+    _tDouble,
+    _tFortress,
+    _tCorridor,
+    _tSeesaw,
+    _tBunker,
+    _tTntChain,
+    _tTntDrop
+  ],
+  [
+    _tPyramid,
+    _tCorridor,
+    _tSeesaw,
+    _tBunker,
+    _tSplitBridge,
+    _tArch,
+    _tTntShield,
+    _tTntTwin,
+    _tTntDrop
+  ],
+  [
+    _tDouble,
+    _tFortress,
+    _tBunker,
+    _tSplitBridge,
+    _tArch,
+    _tScatter,
+    _tTntChain,
+    _tTntDrop
+  ],
+  [
+    _tTwin,
+    _tCorridor,
+    _tSplitBridge,
+    _tArch,
+    _tScatter,
+    _tTower,
+    _tTntShield,
+    _tTntTwin,
+    _tTntDrop
+  ],
+  [
+    _tStoneShield,
+    _tDome,
+    _tSeesaw,
+    _tArch,
+    _tScatter,
+    _tPyramid,
+    _tTnt,
+    _tTntChain,
+    _tTntShield,
+    _tTntTwin,
+    _tTntDrop
+  ],
 ];
 
 const List<String> _chapterNames = [
@@ -537,7 +730,7 @@ bool _validate(LevelDef level, List<ShotPlan> shots) {
 }
 
 void main() {
-  final rng = Random(20261012);
+  final rng = Random(20261026);
   final levels = <Map<String, dynamic>>[];
   var attempts = 0;
   var failures = 0;

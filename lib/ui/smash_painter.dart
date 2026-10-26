@@ -424,6 +424,8 @@ class SmashPainter extends CustomPainter {
         if (!_drawSprite(canvas, 'stone', rect)) _drawStone(canvas, rect, sb);
       case SmashBodyKind.cage:
         _drawCage(canvas, rect, sb.petId ?? '?');
+      case SmashBodyKind.tnt:
+        if (!_drawSprite(canvas, 'tnt', rect)) _drawTnt(canvas, rect);
       case SmashBodyKind.ball:
         final br = Rect.fromCenter(
             center: Offset.zero, width: w * 1.18, height: h * 1.18);
@@ -602,9 +604,23 @@ class SmashPainter extends CustomPainter {
     'pet_bunny',
   ];
 
+  /// Full-body jumping sprites, used ONLY by the celebration: the head
+  /// portraits above look fine peeking out of a cage, but a freed pet must
+  /// read as a whole pet jumping, not a bobbing head.
+  static const _petFullSprites = [
+    'pet_full_puppy',
+    'pet_full_kitten',
+    'pet_full_ginger',
+    'pet_full_bunny',
+  ];
+
   /// Sprite name for a pet id (shared with the celebration renderer).
   static String petSpriteFor(String petId) =>
       _petSprites[petId.hashCode.abs() % _petSprites.length];
+
+  /// Full-body sprite for a pet id (same index as [petSpriteFor]).
+  static String petFullSpriteFor(String petId) =>
+      _petFullSprites[petId.hashCode.abs() % _petFullSprites.length];
 
   /// Freed pets hop with joy + floating hearts for ~1.8s after rescue.
   void _drawCelebrations(Canvas canvas) {
@@ -615,17 +631,20 @@ class SmashPainter extends CustomPainter {
       final fade = t > duration - 0.4 ? (duration - t) / 0.4 : 1.0;
       final pop = t < 0.22 ? 0.4 + 0.6 * (t / 0.22) : 1.0;
       final hopAmp = t < 1.2 ? 1.0 : 0.25; // big hops, then settles
-      final hop = sin(t * 9.0).abs() * _s(0.38) * hopAmp;
+      final hop = sin(t * 9.0).abs() * _s(0.55) * hopAmp;
       final wiggle = sin(t * 11.0) * 0.14;
-      final center = _w2s(c.at) + Offset(0, -hop - _s(0.35));
-      final size = _s(1.35) * pop;
+      // Full-body pet, jumping high above where the cage stood so it
+      // reads as FREED (feet clear of the ground, whole body visible).
+      final center = _w2s(c.at) + Offset(0, -hop - _s(0.75));
+      final size = _s(1.9) * pop;
       final paint = Paint()
         ..filterQuality = FilterQuality.medium
         ..color = Color.fromRGBO(255, 255, 255, fade);
       canvas.save();
       canvas.translate(center.dx, center.dy);
       canvas.rotate(wiggle);
-      final img = sprites.get(petSpriteFor(c.petId));
+      final img = sprites.get(petFullSpriteFor(c.petId)) ??
+          sprites.get(petSpriteFor(c.petId));
       if (img != null) {
         final w = size;
         final h = w * img.height / img.width;
@@ -894,6 +913,40 @@ class SmashPainter extends CustomPainter {
     canvas.drawOval(
         Rect.fromCenter(center: c, width: w, height: w * 0.26),
         Paint()..color = Colors.black.withValues(alpha: 0.20 * t));
+  }
+
+  /// Procedural TNT barrel (used only if the TNT sprite is missing).
+  void _drawTnt(Canvas canvas, Rect r) {
+    final rr = RRect.fromRectAndRadius(r, Radius.circular(r.width * 0.18));
+    canvas.drawRRect(rr, Paint()..color = const Color(0xFFD32F2F));
+    // Darker metal bands.
+    canvas.drawRect(
+        Rect.fromLTWH(r.left, r.top + r.height * 0.12, r.width,
+            r.height * 0.16),
+        Paint()..color = const Color(0xFF8E1B1B));
+    canvas.drawRect(
+        Rect.fromLTWH(
+            r.left, r.bottom - r.height * 0.28, r.width, r.height * 0.16),
+        Paint()..color = const Color(0xFF8E1B1B));
+    // Yellow label.
+    final label = RRect.fromRectAndRadius(
+        Rect.fromCenter(
+            center: r.center,
+            width: r.width * 0.7,
+            height: r.height * 0.4),
+        Radius.circular(r.height * 0.08));
+    canvas.drawRRect(label, Paint()..color = const Color(0xFFFFEB3B));
+    final tp = TextPainter(
+      text: TextSpan(
+          text: 'TNT',
+          style: TextStyle(
+              fontSize: r.height * 0.28,
+              fontWeight: FontWeight.w900,
+              color: const Color(0xFF212121))),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    tp.paint(
+        canvas, Offset(r.center.dx - tp.width / 2, r.center.dy - tp.height / 2));
   }
 
   void _drawBall(Canvas canvas, double rad) {

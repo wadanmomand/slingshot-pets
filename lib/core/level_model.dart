@@ -8,6 +8,7 @@ enum SmashBodyKind {
   glass, // fragile panes — break on light impact
   stone, // unbreakable, heavy
   cage, // breakable; holds a pet (petId required)
+  tnt, // explosive barrel — breaks on light impact, blasts breakables nearby
   ball, // projectile (world-internal; never placed in level JSON)
 }
 

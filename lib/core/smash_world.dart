@@ -10,12 +10,18 @@ import 'level_model.dart';
 /// Infinity = unbreakable. Tuned via unit tests (see test/smash_world_test).
 const Map<SmashBodyKind, double> breakSpeeds = {
   SmashBodyKind.glass: 2.0,
+  SmashBodyKind.tnt: 2.0,
   SmashBodyKind.cage: 3.5,
   SmashBodyKind.wood: 5.0,
   SmashBodyKind.ground: double.infinity,
   SmashBodyKind.stone: double.infinity,
   SmashBodyKind.ball: double.infinity,
 };
+
+/// Blast radius (meters) of a TNT explosion: destroys every breakable
+/// body (wood/glass/cage/TNT) whose center is within this distance.
+/// Stone, ground and the ball are never destroyed by a blast.
+const double tntBlastRadius = 3.5;
 
 enum GamePhase { aiming, flying, won, lost }
 
@@ -109,6 +115,7 @@ class SmashWorld {
       SmashBodyKind.glass => (0.6, 0.3, 0.1),
       SmashBodyKind.stone => (3.0, 0.6, 0.05),
       SmashBodyKind.cage => (0.8, 0.4, 0.2),
+      SmashBodyKind.tnt => (0.8, 0.4, 0.1),
       SmashBodyKind.ground => (1.0, 0.8, 0.0),
       SmashBodyKind.ball => (1.2, 0.4, 0.45),
     };
@@ -163,17 +170,42 @@ class SmashWorld {
 
   void _applyBreaks() {
     final doomed = <SmashBody>[];
+    void markBroken(SmashBody sb) {
+      sb.broken = true;
+      doomed.add(sb);
+      _breakEvents.add(
+        BreakEvent(sb.kind, sb.body.position.clone(), sb.petId),
+      );
+      if (sb.kind == SmashBodyKind.cage && sb.petId != null) {
+        freedPets.add(sb.petId!);
+      }
+    }
+
     for (final sb in bodies) {
       if (sb.broken) continue;
       final threshold = breakSpeeds[sb.kind]!;
       if (sb.peakImpact > threshold) {
-        sb.broken = true;
-        doomed.add(sb);
-        _breakEvents.add(
-          BreakEvent(sb.kind, sb.body.position.clone(), sb.petId),
-        );
-        if (sb.kind == SmashBodyKind.cage && sb.petId != null) {
-          freedPets.add(sb.petId!);
+        markBroken(sb);
+      }
+    }
+    // TNT chain reactions: an exploding barrel destroys every breakable
+    // body within its blast radius — including other TNT, which chain.
+    // Snapshot the TNT list per pass: blasting grows `doomed` while we
+    // iterate, and a list must never grow during its own iteration.
+    var grew = true;
+    while (grew) {
+      grew = false;
+      final tnts =
+          doomed.where((s) => s.kind == SmashBodyKind.tnt).toList();
+      for (final tnt in tnts) {
+        for (final sb in bodies) {
+          if (sb.broken) continue;
+          if (breakSpeeds[sb.kind] == double.infinity) continue;
+          final d = (sb.body.position - tnt.body.position).length;
+          if (d <= tntBlastRadius) {
+            markBroken(sb);
+            grew = true;
+          }
         }
       }
     }

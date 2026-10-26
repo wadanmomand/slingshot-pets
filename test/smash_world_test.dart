@@ -130,4 +130,101 @@ void main() {
     w.launchBall(Vector2(1, 1)); // ball in flight: ignored
     expect(w.ballsUsed, usedAfterFirst);
   });
+
+  test('tnt blast frees a nearby cage', () {
+    // Ball drops vertically onto the barrel; the cage beside it is never
+    // touched directly, so only the blast can free it.
+    final level = LevelDef.fromJson({
+      'id': 10,
+      'balls': 3,
+      'par': 1,
+      'slingX': 5.0,
+      'slingY': 6.0,
+      'bodies': [
+        {'kind': 'ground', 'x': 0, 'y': -0.5, 'w': 40, 'h': 1},
+        {'kind': 'tnt', 'x': 5.0, 'y': 0.5, 'w': 1.0, 'h': 1.0},
+        {
+          'kind': 'cage',
+          'x': 6.2,
+          'y': 0.70,
+          'w': 1.40,
+          'h': 1.40,
+          'petId': 'blast1'
+        },
+      ],
+    });
+    final w = SmashWorld(level);
+    w.launchBall(Vector2(0, 0)); // straight drop onto the barrel
+    _stepUntil(w, () => w.phase == GamePhase.won);
+    expect(w.phase, GamePhase.won);
+    expect(w.freedPets, contains('blast1'));
+    final kinds = w.takeBreakEvents().map((e) => e.kind).toSet();
+    expect(kinds, contains(SmashBodyKind.tnt));
+    expect(kinds, contains(SmashBodyKind.cage));
+  });
+
+  test('tnt chain reaction frees a distant cage', () {
+    // Cage is 5.0m from the first barrel (beyond the 3.5m blast) but
+    // 2.5m from the second barrel: only a chain frees it.
+    final level = LevelDef.fromJson({
+      'id': 11,
+      'balls': 3,
+      'par': 1,
+      'slingX': 5.0,
+      'slingY': 6.0,
+      'bodies': [
+        {'kind': 'ground', 'x': 0, 'y': -0.5, 'w': 40, 'h': 1},
+        {'kind': 'tnt', 'x': 5.0, 'y': 0.5, 'w': 1.0, 'h': 1.0},
+        {'kind': 'tnt', 'x': 7.5, 'y': 0.5, 'w': 1.0, 'h': 1.0},
+        {
+          'kind': 'cage',
+          'x': 10.0,
+          'y': 0.70,
+          'w': 1.40,
+          'h': 1.40,
+          'petId': 'chain1'
+        },
+      ],
+    });
+    final w = SmashWorld(level);
+    w.launchBall(Vector2(0, 0));
+    _stepUntil(w, () => w.phase == GamePhase.won);
+    expect(w.phase, GamePhase.won);
+    expect(w.freedPets, contains('chain1'));
+    final tntEvents = w
+        .takeBreakEvents()
+        .where((e) => e.kind == SmashBodyKind.tnt)
+        .toList();
+    expect(tntEvents.length, 2);
+  });
+
+  test('tnt blast leaves stone and distant cages untouched', () {
+    final level = LevelDef.fromJson({
+      'id': 12,
+      'balls': 3,
+      'par': 1,
+      'slingX': 5.0,
+      'slingY': 6.0,
+      'bodies': [
+        {'kind': 'ground', 'x': 0, 'y': -0.5, 'w': 40, 'h': 1},
+        {'kind': 'tnt', 'x': 5.0, 'y': 0.5, 'w': 1.0, 'h': 1.0},
+        {'kind': 'stone', 'x': 6.0, 'y': 0.5, 'w': 1.0, 'h': 1.0},
+        {
+          'kind': 'cage',
+          'x': 12.0,
+          'y': 0.70,
+          'w': 1.40,
+          'h': 1.40,
+          'petId': 'far2'
+        },
+      ],
+    });
+    final w = SmashWorld(level);
+    w.launchBall(Vector2(0, 0));
+    _stepUntil(w, () => w.phase == GamePhase.aiming && w.ballsUsed == 1);
+    expect(w.freedPets, isEmpty);
+    expect(w.phase, isNot(GamePhase.won));
+    expect(w.bodies.any((b) => b.kind == SmashBodyKind.stone), isTrue);
+    expect(w.bodies.any((b) => b.kind == SmashBodyKind.cage), isTrue);
+  });
 }
