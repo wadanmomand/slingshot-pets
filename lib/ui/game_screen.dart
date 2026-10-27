@@ -215,6 +215,18 @@ class _GameScreenState extends State<GameScreen>
             _slowmoLeft = 0.9;
             _timeScale = 0.25;
           }
+        case SmashBodyKind.tnt:
+          // Explosion: big fireball burst + heavy shake (no dedicated boom
+          // sample — shatter + crack layered reads as a blast).
+          _burst(at, [
+            const Color(0xFFFF5722),
+            const Color(0xFFFFEB3B),
+            const Color(0xFFD32F2F),
+          ], 26);
+          _sfx.shatter();
+          _sfx.crack();
+          Haptics.heavy();
+          _shakeMag = max(_shakeMag, 20);
         case SmashBodyKind.stone:
         case SmashBodyKind.ground:
         case SmashBodyKind.ball:
@@ -573,13 +585,11 @@ class _GameScreenState extends State<GameScreen>
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         child: sprites.get('star_3d') != null
-                            ? ColorFiltered(
-                                colorFilter: i < stars
-                                    ? const ColorFilter.mode(
-                                        Colors.transparent,
-                                        BlendMode.multiply)
-                                    : const ColorFilter.mode(
-                                        Colors.grey, BlendMode.saturation),
+                            ? Opacity(
+                                // Same rule as the map: no saturation
+                                // ColorFilter anywhere (it broke list
+                                // rasterization); dim unearned stars.
+                                opacity: i < stars ? 1.0 : 0.3,
                                 child: RawImage(
                                     image: sprites.get('star_3d'),
                                     width: 52,

@@ -1,4 +1,5 @@
 // Slingshot Pets — physics rescue puzzler.
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -8,6 +9,7 @@ import 'ads/ad_service.dart';
 import 'art/sprites.dart';
 import 'core/level_model.dart';
 import 'meta/progress.dart';
+import 'ui/chunky_text.dart';
 import 'ui/home_screen.dart';
 
 void main() {
@@ -51,9 +53,10 @@ class _BootState extends State<_Boot> {
     final progress = ProgressState();
     await progress.load();
     final ads = AdService();
-    await ads.init();
-    // Sprites are decoded before the home screen builds, so 3D icons
-    // (coin chip etc.) are never blank on first paint, on any device.
+    // Ads initialize in the background: home must never wait on the
+    // network. By the time the player reaches the map (banner) or wins a
+    // level (interstitial/rewarded), init has long finished.
+    unawaited(ads.init());
     await SpriteCache.instance.load();
     return _Ready(levels, progress, ads);
   }
@@ -70,8 +73,38 @@ class _BootState extends State<_Boot> {
           );
         }
         if (!snap.hasData) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+          // Branded loading screen (never a bare spinner): the boot only
+          // waits on local work now (levels + sprites), ads init in bg.
+          return Scaffold(
+            body: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFFFFB300), Color(0xFFF57C00)],
+                ),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ChunkyText('SLINGSHOT', fontSize: 52),
+                    ChunkyText('PETS', fontSize: 52),
+                    const SizedBox(height: 28),
+                    const CircularProgressIndicator(color: Colors.white),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Loading your pets...',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           );
         }
         final r = snap.data!;

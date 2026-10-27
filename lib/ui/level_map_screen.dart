@@ -1,7 +1,6 @@
 // Level map: full-3D garden world, 3D-styled winding path with coin nodes.
 // Chunky golden 3D chapter title on top (locked design language).
 import 'dart:math';
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -42,7 +41,6 @@ class _LevelMapScreenState extends State<LevelMapScreen> {
 
   static const double _spacing = 132;
   static const double _nodeR = 44;
-  static const double _topPad = 500;
 
   static const List<String> _names = [
     'Backyard Basics', 'Workshop', 'Rooftops', 'Construction', 'Playground',
@@ -64,15 +62,13 @@ class _LevelMapScreenState extends State<LevelMapScreen> {
     super.dispose();
   }
 
-  double _nodeX(int i, double w, double mapH) =>
-      w / 2 + (w * 0.30) * sin(i * 0.5);
-  double _nodeY(int i) => _topPad + i * _spacing;
+  double _nodeX(int i, double w) => w / 2 + (w * 0.30) * sin(i * 0.5);
 
   void _jumpToCurrent() {
     if (!_scroll.hasClients) return;
     // Chapter-relative index: chapter 2's level 250 is node 49, not 99 (m5).
     final idx = (widget.progress.maxUnlocked - 1 - _chapter * 100).clamp(0, 99);
-    final y = _nodeY(idx) - MediaQuery.of(context).size.height / 2;
+    final y = idx * _spacing + _spacing / 2 - MediaQuery.of(context).size.height / 2;
     _scroll.jumpTo(y.clamp(0, _scroll.position.maxScrollExtent));
   }
 
@@ -88,140 +84,137 @@ class _LevelMapScreenState extends State<LevelMapScreen> {
     Haptics.enabled = widget.progress.vibration;
     final start = _chapter * 100;
     final chapterLevels = widget.levels.sublist(start, start + 100);
-    final mapH = _topPad + 100 * _spacing + 120;
     final bg = SpriteCache.instance.get('bg_map');
     final fountain = SpriteCache.instance.get('fountain_3d');
     return Scaffold(
       body: Column(
         children: [
+          // Fixed header: title, stats and chips no longer scroll away.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 50, 16, 0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _roundBtn(
+                  'btn3d_back',
+                  () => Navigator.pop(context),
+                ),
+                Expanded(child: _BigTitle(_names[_chapter])),
+                _roundBtn('btn3d_gear', () {
+                  _sfx.click();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          SettingsScreen(progress: widget.progress),
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Cream stats bar: coins + stars (concept).
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF8E1),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                    color: const Color(0xFFD4A017), width: 2),
+                boxShadow: const [
+                  BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 8,
+                      offset: Offset(0, 3)),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _stat('coin_3d', '${widget.progress.coins}'),
+                  _stat('star_3d', '${widget.progress.totalStars}'),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Chapter quick-jump chips.
+          SizedBox(
+            height: 44,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              itemCount: 10,
+              itemBuilder: (context, i) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: ChoiceChip(
+                  label: Text('${i + 1}',
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  selected: _chapter == i,
+                  selectedColor: const Color(0xFFFFB300),
+                  backgroundColor: Colors.white.withValues(alpha: 0.92),
+                  onSelected: (_) => _jumpToChapter(i),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Scrolling node list. Rows are viewport-sized (132px) so no
+          // single layer is ever taller than the screen: the old
+          // 13,820px canvas failed to rasterize on phones (grey map).
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final w = constraints.maxWidth;
-                final nodes = [
-                  for (var i = 0; i < 100; i++)
-                    Offset(_nodeX(i, w, mapH), _nodeY(i)),
-                ];
-                return SingleChildScrollView(
-                  controller: _scroll,
-                  child: SizedBox(
-                    width: w,
-                    height: mapH,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        CustomPaint(
-                          size: Size(w, mapH),
-                          painter: _MapPainter(bg: bg, nodes: nodes),
-                        ),
-                        // Teal round buttons (concept).
-                        Positioned(
-                          top: 54,
-                          left: 16,
-                          child: _roundBtn(
-                            'btn3d_back',
-                            () => Navigator.pop(context),
-                          ),
-                        ),
-                        Positioned(
-                          top: 54,
-                          right: 16,
-                          child: _roundBtn('btn3d_gear', () {
-                            _sfx.click();
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => SettingsScreen(
-                                    progress: widget.progress),
-                              ),
-                            );
-                          }),
-                        ),
-                        // Huge chunky title (concept): two lines, max bold.
-                        Positioned(
-                          top: 50,
-                          left: 72,
-                          right: 72,
-                          child: _BigTitle(_names[_chapter]),
-                        ),
-                        // Cream stats bar: coins + stars (concept).
-                        Positioned(
-                          top: 244,
-                          left: 32,
-                          right: 32,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 18, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFF8E1),
-                              borderRadius: BorderRadius.circular(24),
-                              border: Border.all(
-                                  color: const Color(0xFFD4A017), width: 2),
-                              boxShadow: const [
-                                BoxShadow(
-                                    color: Colors.black26,
-                                    blurRadius: 8,
-                                    offset: Offset(0, 3)),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceEvenly,
-                              children: [
-                                _stat('coin_3d',
-                                    '${widget.progress.coins}'),
-                                _stat('star_3d',
-                                    '${widget.progress.totalStars}'),
-                              ],
-                            ),
-                          ),
-                        ),
-                        // Chapter quick-jump chips.
-                        Positioned(
-                          top: 316,
-                          left: 0,
-                          right: 0,
-                          child: SizedBox(
-                            height: 44,
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 12),
-                              itemCount: 10,
-                              itemBuilder: (context, i) => Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 4),
-                                child: ChoiceChip(
-                                  label: Text('${i + 1}',
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold)),
-                                  selected: _chapter == i,
-                                  selectedColor: const Color(0xFFFFB300),
-                                  backgroundColor:
-                                      Colors.white.withValues(alpha: 0.92),
-                                  onSelected: (_) => _jumpToChapter(i),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        // Fountain decoration (concept).
-                        if (fountain != null)
-                          Positioned(
-                            top: mapH * 0.42,
-                            right: -30,
-                            child: RawImage(
-                                image: fountain, width: 220, height: 220),
-                          ),
-                        for (var i = 0; i < 100; i++)
-                          Positioned(
-                            left: nodes[i].dx - _nodeR,
-                            top: nodes[i].dy - _nodeR,
-                            child: _levelNode(chapterLevels[i]),
-                          ),
-                      ],
+                return RepaintBoundary(
+                  child: Stack(
+                  children: [
+                    // Garden background, viewport-sized.
+                    Positioned.fill(
+                      child: bg != null
+                          ? RawImage(image: bg, fit: BoxFit.cover)
+                          : Container(color: const Color(0xFF7CB342)),
                     ),
-                  ),
+                    ListView.builder(
+                      controller: _scroll,
+                      itemCount: 100,
+                      itemExtent: _spacing,
+                      itemBuilder: (context, i) {
+                        final x0 = _nodeX(i, w);
+                        final x1 = i < 99 ? _nodeX(i + 1, w) : x0;
+                        return Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            // Cobblestone path segment to the next node.
+                            Positioned.fill(
+                              child: CustomPaint(
+                                painter:
+                                    _PathSegmentPainter(x0: x0, x1: x1),
+                              ),
+                            ),
+                            // Fountain decoration mid-map.
+                            if (i == 40 && fountain != null)
+                              Positioned(
+                                top: -40,
+                                right: -30,
+                                child: RawImage(
+                                    image: fountain, width: 220, height: 220),
+                              ),
+                            Positioned(
+                              left: x0 - _nodeR,
+                              top: _spacing / 2 - _nodeR,
+                              child: _levelNode(chapterLevels[i]),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
                 );
               },
             ),
@@ -380,6 +373,10 @@ class _LevelMapScreenState extends State<LevelMapScreen> {
             ),
           ),
           // 3D stars overlapping the coin's bottom edge (concept).
+          // Unearned stars are dimmed with Opacity, not a saturation
+          // ColorFilter: the filter broke rasterization of the whole
+          // scrolling list (grey map in goldens and on phones), and 33
+          // saveLayers per frame also hurt weak phones.
           Transform.translate(
             offset: const Offset(0, -16),
             child: Row(
@@ -387,13 +384,10 @@ class _LevelMapScreenState extends State<LevelMapScreen> {
               children: [
                 for (var s = 0; s < 3; s++)
                   if (starImg != null)
-                    ColorFiltered(
-                      colorFilter: s < stars
-                          ? const ColorFilter.mode(
-                              Colors.transparent, BlendMode.multiply)
-                          : const ColorFilter.mode(
-                              Colors.grey, BlendMode.saturation),
-                      child: RawImage(image: starImg, width: 26, height: 26),
+                    Opacity(
+                      opacity: s < stars ? 1.0 : 0.3,
+                      child:
+                          RawImage(image: starImg, width: 26, height: 26),
                     )
                   else
                     const SizedBox(width: 26, height: 26),
@@ -427,59 +421,27 @@ class _LevelMapScreenState extends State<LevelMapScreen> {
   }
 }
 
-/// Paints the 3D garden (mirror-tiled) plus a 3D cobblestone path:
-/// soft shadow, soil edge, and individual shaded stones following the curve.
-class _MapPainter extends CustomPainter {
-  final ui.Image? bg;
-  final List<Offset> nodes;
+/// One cobblestone path segment between two neighbouring nodes.
+///
+/// The old map painted a single 13,820px-tall canvas; that giant layer
+/// failed to rasterize on phones (grey map). Segments are 132px rows, so
+/// no layer is ever taller than the screen. The segment spans from this
+/// row's node (y=66) to the next row's node (y=198, overflowing 66px into
+/// the next row, whose own segment starts exactly there — no gaps).
+class _PathSegmentPainter extends CustomPainter {
+  final double x0;
+  final double x1;
 
-  _MapPainter({required this.bg, required this.nodes});
+  _PathSegmentPainter({required this.x0, required this.x1});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
+    // Smooth curve from this node down to the next node.
+    final path = Path()..moveTo(x0, 66);
+    path.cubicTo(x0, 132, x1, 132, x1, 198);
 
-    // 3D garden base (natural aspect, vertical mirror tiling).
-    final img = bg;
-    if (img == null) {
-      canvas.drawRect(
-          Rect.fromLTWH(0, 0, w, h),
-          Paint()..color = const Color(0xFF7CB342));
-    } else {
-      final iw = img.width.toDouble();
-      final ih = img.height.toDouble();
-      final tileH = w * ih / iw;
-      var y = 0.0;
-      var k = 0;
-      final paint = Paint()..filterQuality = FilterQuality.low;
-      while (y < h) {
-        if (k.isEven) {
-          canvas.drawImageRect(img, Rect.fromLTWH(0, 0, iw, ih),
-              Rect.fromLTWH(0, y, w, tileH), paint);
-        } else {
-          canvas.save();
-          canvas.translate(0, y + tileH);
-          canvas.scale(1, -1);
-          canvas.drawImageRect(img, Rect.fromLTWH(0, 0, iw, ih),
-              Rect.fromLTWH(0, 0, w, tileH), paint);
-          canvas.restore();
-        }
-        y += tileH;
-        k++;
-      }
-    }
-
-    // Smooth winding path through the nodes.
-    final path = Path()
-      ..moveTo(nodes.first.dx, nodes.first.dy - 100);
-    for (var i = 0; i < nodes.length - 1; i++) {
-      final mid = (nodes[i] + nodes[i + 1]) / 2;
-      path.quadraticBezierTo(nodes[i].dx, nodes[i].dy, mid.dx, mid.dy);
-    }
-    path.lineTo(nodes.last.dx, nodes.last.dy + 100);
-
-    // Soft drop shadow.
+    // Soft drop shadow: a solid offset stroke (kept simple; the blur
+    // version was removed during diagnosis and never needed back).
     canvas.save();
     canvas.translate(0, 14);
     canvas.drawPath(
@@ -488,8 +450,7 @@ class _MapPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 96
         ..strokeCap = StrokeCap.round
-        ..color = Colors.black.withValues(alpha: 0.30)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12),
+        ..color = Colors.black.withValues(alpha: 0.25),
     );
     canvas.restore();
 
@@ -572,8 +533,8 @@ class _MapPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _MapPainter old) =>
-      old.bg != bg || old.nodes != nodes;
+  bool shouldRepaint(covariant _PathSegmentPainter old) =>
+      old.x0 != x0 || old.x1 != x1;
 }
 
 /// Big two-line chunky title, auto-sized to fill width (concept).
